@@ -75,9 +75,7 @@ WEBHOOK_SECRET=mi_secreto_webhook_123 node send-webhook.js
 
 ---
 
-Si quieres, puedo hacer **una versión aún más resumida y lista para GitHub**, con emojis y bullets cortos, que quede atractiva y profesional para que cualquier reclutador la lea rápido.
 
-¿Quieres que haga eso?
 
 ## Getting Started
 
