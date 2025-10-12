@@ -1,4 +1,83 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Perfecto, aquí tienes una **descripción profesional para tu repositorio de GitHub** que explica el proyecto, cómo usarlo y qué se aprende:
+
+---
+
+## Mini Pasarela de Pagos – Webhook y Tokenización (Demo)
+
+Este proyecto es una **simulación de un flujo de pasarela de pagos** usando Node.js y Next.js, ideal para aprender conceptos clave de fintech y desarrollo seguro de APIs.
+
+### 🔹 Qué hace
+
+* Envía un **POST request** con datos de pago a un endpoint (`/api/webhook`).
+* Genera un **HMAC (firma digital)** para garantizar que el payload sea seguro y auténtico.
+* Simula la **tokenización de tarjetas** para proteger datos sensibles.
+* Responde con un objeto JSON que incluye:
+
+  * `id` del pago
+  * `tokenTarjeta` (simulado)
+  * `estado` del pago
+  * `monto`, `moneda`, y fecha de creación
+
+---
+
+### 🔹 Qué puedes aprender con este flujo
+
+1. **Webhooks:** cómo recibir y procesar eventos automáticos desde un servicio externo.
+2. **Seguridad con HMAC:** validar integridad y autenticidad de los datos enviados.
+3. **Tokenización:** reemplazar datos sensibles por tokens seguros (simulación de PCI DSS).
+4. **Consumo de APIs con Node.js y fetch:** enviar requests POST con headers y body JSON.
+5. **Variables de entorno con dotenv:** manejar secretos sin exponerlos en el código.
+6. **Pruebas con Postman:** enviar requests manualmente y verificar la respuesta del servidor.
+
+---
+
+### 🔹 Cómo usarlo
+
+1. Clonar el repositorio y moverse al directorio:
+
+```bash
+git clone <repo_url>
+cd mini-pasarela-next
+```
+
+2. Instalar dependencias:
+
+```bash
+npm install
+```
+
+3. Crear un archivo `.env.local` con tu secreto de webhook:
+
+```
+WEBHOOK_SECRET=mi_secreto_webhook_123
+```
+
+4. Ejecutar el script para enviar un pago de prueba:
+
+```bash
+WEBHOOK_SECRET=mi_secreto_webhook_123 node send-webhook.js
+```
+
+5. Ver la respuesta en consola o usar **Postman** para probar manualmente:
+
+* URL: `http://localhost:3000/api/webhook`
+* Method: POST
+* Headers:
+
+  * `Content-Type: application/json`
+  * `x-signature: <valor de sig que imprime send-webhook.js>`
+* Body (raw JSON):
+
+```json
+{"idPago":1,"estadoBanco":"APROBADO"}
+```
+
+---
+
+Si quieres, puedo hacer **una versión aún más resumida y lista para GitHub**, con emojis y bullets cortos, que quede atractiva y profesional para que cualquier reclutador la lea rápido.
+
+¿Quieres que haga eso?
 
 ## Getting Started
 
