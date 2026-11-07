@@ -1,113 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-Perfecto, aquí tienes una **descripción profesional para tu repositorio de GitHub** que explica el proyecto, cómo usarlo y qué se aprende:
+# Mini pasarela de pagos
 
----
+Demo de backend que simula el flujo básico de una pasarela de pagos: recibir un pago, tokenizar la tarjeta y actualizar su estado con un webhook firmado con HMAC. Es un proyecto de aprendizaje sobre la seguridad de una API de pagos.
 
-## Mini Pasarela de Pagos – Webhook y Tokenización (Demo)
+## Qué hace
 
-Este proyecto es una **simulación de un flujo de pasarela de pagos** usando Node.js y Next.js, ideal para aprender conceptos clave de fintech y desarrollo seguro de APIs.
+- `POST /api/pago` recibe `tarjeta`, `monto`, `moneda` y `metodo` (opcional). Valida los campos obligatorios, reemplaza el número de tarjeta por un token y guarda el pago en estado `PENDIENTE`.
+- `GET /api/pago` lista los pagos registrados (solo para pruebas).
+- `POST /api/webhook` simula la notificación del banco. Verifica la firma HMAC-SHA256 del cuerpo y actualiza el estado del pago. Lo busca por `idPago` o por `tokenTarjeta`.
+- Ambos endpoints aplican cabeceras de seguridad con `helmet`. Ante un método no soportado responden `405` con la cabecera `Allow`.
 
-### 🔹 Qué hace
+## Stack
 
-* Envía un **POST request** con datos de pago a un endpoint (`/api/webhook`).
-* Genera un **HMAC (firma digital)** para garantizar que el payload sea seguro y auténtico.
-* Simula la **tokenización de tarjetas** para proteger datos sensibles.
-* Responde con un objeto JSON que incluye:
+- Next.js 15 (API Routes en `pages/api`)
+- Módulo `crypto` de Node.js para HMAC
+- `helmet` para cabeceras HTTP de seguridad
 
-  * `id` del pago
-  * `tokenTarjeta` (simulado)
-  * `estado` del pago
-  * `monto`, `moneda`, y fecha de creación
+## Estructura
 
----
-
-### 🔹 Qué puedes aprender con este flujo
-
-1. **Webhooks:** cómo recibir y procesar eventos automáticos desde un servicio externo.
-2. **Seguridad con HMAC:** validar integridad y autenticidad de los datos enviados.
-3. **Tokenización:** reemplazar datos sensibles por tokens seguros (simulación de PCI DSS).
-4. **Consumo de APIs con Node.js y fetch:** enviar requests POST con headers y body JSON.
-5. **Variables de entorno con dotenv:** manejar secretos sin exponerlos en el código.
-6. **Pruebas con Postman:** enviar requests manualmente y verificar la respuesta del servidor.
-
----
-
-### 🔹 Cómo usarlo
-
-1. Clonar el repositorio y moverse al directorio:
-
-```bash
-git clone <repo_url>
-cd mini-pasarela-next
+```
+pages/api/
+├── pago.js      # Registro y tokenización de pagos
+└── webhook.js   # Webhook del banco con verificación HMAC
 ```
 
-2. Instalar dependencias:
+## Cómo correrlo
 
 ```bash
 npm install
+echo "WEBHOOK_SECRET=mi_secreto_de_prueba" > .env.local
+npm run dev
 ```
 
-3. Crear un archivo `.env.local` con tu secreto de webhook:
-
-```
-WEBHOOK_SECRET=mi_secreto_webhook_123
-```
-
-4. Ejecutar el script para enviar un pago de prueba:
+Registrar un pago:
 
 ```bash
-WEBHOOK_SECRET=mi_secreto_webhook_123 node send-webhook.js
+curl -X POST http://localhost:3000/api/pago \
+  -H "Content-Type: application/json" \
+  -d '{"tarjeta":"4111111111111111","monto":50000,"moneda":"COP"}'
 ```
 
-5. Ver la respuesta en consola o usar **Postman** para probar manualmente:
+Enviar un webhook firmado. La firma es el HMAC-SHA256, en hexadecimal, del cuerpo JSON compacto:
 
-* URL: `http://localhost:3000/api/webhook`
-* Method: POST
-* Headers:
-
-  * `Content-Type: application/json`
-  * `x-signature: <valor de sig que imprime send-webhook.js>`
-* Body (raw JSON):
-
-```json
-{"idPago":1,"estadoBanco":"APROBADO"}
+```bash
+BODY='{"idPago":1,"estadoBanco":"APROBADO"}'
+SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "mi_secreto_de_prueba" | awk '{print $NF}')
+curl -X POST http://localhost:3000/api/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-signature: $SIG" \
+  -d "$BODY"
 ```
+
+Si la firma no coincide, el webhook responde `401`. Si falta `WEBHOOK_SECRET`, responde `500`.
+
+## Decisiones técnicas
+
+- **Comparación de firmas en tiempo constante.** La firma se compara con `crypto.timingSafeEqual`, tras revisar que ambos buffers tengan la misma longitud. Así no se filtra información por diferencias de tiempo.
+- **El secreto vive fuera del código.** `WEBHOOK_SECRET` se lee de variables de entorno y `.env*` está en `.gitignore`.
+- **El número de tarjeta no se guarda.** El pago almacena solo el token generado.
+- **Cabeceras de seguridad en cada respuesta.** `helmet` es un middleware de Express; aquí se adapta a las API Routes de Next.js con un pequeño envoltorio en promesa.
+
+## Limitaciones
+
+Es una demo, no un sistema listo para producción:
+
+- Los pagos se guardan en memoria y se pierden al reiniciar. Además, `pago.js` y `webhook.js` tienen cada uno su propio arreglo, así que el webhook no ve los pagos creados en `/api/pago`. Si no encuentra el pago, crea un registro nuevo.
+- La firma se calcula sobre `JSON.stringify(req.body)`, no sobre el cuerpo crudo de la petición. Si el remitente formatea el JSON de otra manera, la firma no coincide.
+- El token se genera con `Math.random()`, no con un generador criptográfico ni con una bóveda de tokens.
+- No valida el número de tarjeta (por ejemplo, con Luhn) ni el formato del monto.
+- No tiene pruebas automatizadas ni interfaz web.
 
 ---
 
-
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Hecho por [Joan Mateo Cardona](https://github.com/JoanMateo77).
